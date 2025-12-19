@@ -630,7 +630,7 @@ function createDatabaseMeta(dbName){
           if(!name) { showToast('Nombre vacio', 'error'); return; }
           if(typeof createDatabaseMeta === 'function'){
             const ok = createDatabaseMeta(name);
-            if(ok) showToast(`Base "${name}" creada (meta)", 'success');
+            if(ok) showToast(`Base "${name}" creada (meta)", 'success'`);
             else showToast('No se pudo crear (posible duplicado)', 'error');
           } else {
             showToast('Función createDatabaseMeta no encontrada', 'error');
