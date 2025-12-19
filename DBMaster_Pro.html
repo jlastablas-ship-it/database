@@ -1,0 +1,1478 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DBMaster Pro — PWA Single File</title>
+
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CDN (optional, allowed by requirements) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Minimal custom CSS (palette: slate, indigo, amber) */
+    :root{
+      --bg-slate: #0f172a;
+      --panel-slate: #0b1220;
+      --muted: #94a3b8;
+      --indigo: #6366f1;
+      --amber: #f59e0b;
+      --glass: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%}
+    body{
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #071029 0%, #071427 100%);
+      color: #e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .sidebar { background: linear-gradient(180deg, rgba(15,23,42,0.8), rgba(2,6,23,0.8)); }
+    .glass { background: var(--glass); border-radius:8px; }
+    .toast { position: fixed; right: 1rem; bottom: 1rem; z-index: 60; }
+    /* simple modal transitions */
+    .modal-backdrop { transition: opacity .18s ease; }
+    .sr-only { position: absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    /* small table tweaks */
+    table { border-collapse: collapse; width:100%; }
+    th, td { padding: 0.5rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.03); text-align: left; font-size: 0.9rem; }
+    .scroll-area { max-height: 60vh; overflow:auto; }
+    /* badge */
+    .badge { background: rgba(99,102,241,0.12); color: var(--indigo); padding: .18rem .5rem; border-radius: 999px; font-weight:600; font-size:0.75rem; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Main layout -->
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 p-4 sidebar glass hidden md:block">
+      <div class="mb-6">
+        <h1 class="text-2xl font-semibold text-indigo-100">DBMaster Pro</h1>
+        <p class="text-sm text-muted-foreground text-gray-400">PWA · Single-file · IndexedDB</p>
+      </div>
+
+      <nav class="space-y-2" aria-label="Main navigation">
+        <button data-view="dashboard" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-white/3 flex items-center gap-2">
+          <!-- SVG Dashboard Icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-indigo-200"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 13h8V3H3v10zM3 21h8v-6H3v6zM13 21h8V11h-8v10zM13 3v6h8V3h-8z"/></svg>
+          Dashboard
+        </button>
+        <button data-view="data-center" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-white/3 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-indigo-200"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2l8 4v6a8 8 0 1 1-16 0V6l8-4z"/></svg>
+          Centro de Datos
+        </button>
+        <button data-view="explorer" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-white/3 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-indigo-200"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2l2 7h7l-5.5 4 2 7L12 16l-7.5 4 2-7L1 9h7l2-7z"/></svg>
+          Explorador de Tablas
+        </button>
+        <button data-view="schema" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-white/3 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-indigo-200"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h2a2 2 0 0 1 2 2v10H3V7zM21 7h-2a2 2 0 0 0-2 2v10h4V7zM7 3h10v4H7V3z"/></svg>
+          Editor de Esquemas
+        </button>
+        <button data-view="migration" class="nav-btn w-full text-left px-3 py-2 rounded hover:bg-white/3 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-amber-300"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 3v4m4-4v4M3 11h18M5 21h14a2 2 0 0 0 2-2V11H3v8a2 2 0 0 0 2 2z"/></svg>
+          Migración (T-SQL)
+        </button>
+      </nav>
+
+      <div class="mt-6">
+        <button id="export-backup" class="w-full text-sm py-2 px-3 rounded bg-indigo-600 hover:bg-indigo-500">Exportar Backup (JSON)</button>
+        <button id="import-file" class="w-full mt-2 text-sm py-2 px-3 rounded bg-amber-500 hover:bg-amber-400">Importar CSV/JSON</button>
+      </div>
+
+      <div class="mt-6 text-xs text-gray-400">
+        <div>Estado: <span id="status-db" class="badge">offline</span></div>
+        <div class="mt-2">Usuario: <strong class="text-indigo-200">local</strong></div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-6 overflow-auto">
+      <header class="flex items-center justify-between mb-6">
+        <div>
+          <h2 id="view-title" class="text-2xl font-semibold">Dashboard</h2>
+          <p id="view-sub" class="text-sm text-gray-400">Resumen rápido de bases y tablas</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="toggle-sidebar" class="md:hidden p-2 rounded bg-white/3" aria-label="Toggle sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </button>
+          <div class="flex items-center gap-2">
+            <label for="select-db" class="sr-only">Selecciona base</label>
+            <select id="select-db" class="bg-transparent border rounded px-3 py-2 text-sm">
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <section id="content-area">
+        <!-- Dashboard view -->
+        <div id="view-dashboard" class="view">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="glass p-4">
+              <h3 class="text-sm text-gray-300">Bases de Datos</h3>
+              <div id="db-count" class="text-3xl font-bold mt-2">0</div>
+            </div>
+            <div class="glass p-4">
+              <h3 class="text-sm text-gray-300">Tablas Total</h3>
+              <div id="table-count" class="text-3xl font-bold mt-2">0</div>
+            </div>
+            <div class="glass p-4">
+              <h3 class="text-sm text-gray-300">Registros Totales</h3>
+              <div id="row-count" class="text-3xl font-bold mt-2">0</div>
+            </div>
+          </div>
+
+          <div class="mt-6 glass p-4">
+            <h4 class="font-semibold">Acciones rápidas</h4>
+            <div class="mt-3 flex gap-2">
+              <button id="create-db-btn" class="px-3 py-2 bg-indigo-600 rounded">Crear Base</button>
+              <button id="create-table-btn" class="px-3 py-2 bg-indigo-500 rounded">Crear Tabla</button>
+              <button id="sample-data-btn" class="px-3 py-2 bg-amber-500 rounded">Instalar Demo</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-3">Sugerencias: crea una tabla y añade registros para probar import/export y migración.</p>
+          </div>
+        </div>
+
+        <!-- Data Center view -->
+        <div id="view-data-center" class="view hidden">
+          <div class="glass p-4">
+            <h3 class="font-semibold">Centro de Datos</h3>
+            <div class="mt-3 flex gap-3">
+              <input id="new-db-name" placeholder="nombre_db_demo" class="px-3 py-2 bg-transparent border rounded flex-1" />
+              <button id="create-db" class="px-3 py-2 bg-indigo-600 rounded">Crear</button>
+            </div>
+
+            <div class="mt-4">
+              <h4 class="text-sm text-gray-300">Bases existentes</h4>
+              <ul id="db-list" class="mt-2 space-y-2"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explorer view -->
+        <div id="view-explorer" class="view hidden">
+          <div class="flex gap-4">
+            <div class="w-1/3 glass p-4">
+              <h4 class="font-semibold">Tablas en <span id="explorer-db-name">-</span></h4>
+              <div class="mt-3">
+                <button id="create-table" class="px-3 py-2 bg-indigo-600 rounded">Nueva Tabla</button>
+                <div class="mt-3 scroll-area">
+                  <ul id="table-list" class="space-y-2"></ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex-1 glass p-4">
+              <div class="flex justify-between items-start">
+                <h4 class="font-semibold">Vista de tabla: <span id="table-name-title">-</span></h4>
+                <div class="flex gap-2">
+                  <button id="btn-insert-row" class="px-3 py-2 bg-indigo-500 rounded">Insertar Registro</button>
+                  <button id="btn-export-table" class="px-3 py-2 bg-amber-500 rounded">Exportar (JSON)</button>
+                </div>
+              </div>
+
+              <div id="table-actions" class="mt-3 text-sm text-gray-400">
+                <span id="table-schema-badge" class="badge">Esquema</span>
+                <button id="rename-table" class="ml-3 px-2 py-1 bg-white/5 rounded text-xs">Renombrar</button>
+                <button id="delete-table" class="ml-2 px-2 py-1 bg-red-600 rounded text-xs">Eliminar</button>
+                <button id="import-to-table" class="ml-2 px-2 py-1 bg-amber-600 rounded text-xs">Importar CSV/JSON</button>
+              </div>
+
+              <div class="mt-4 scroll-area">
+                <table id="table-rows">
+                  <thead id="table-head"></thead>
+                  <tbody id="table-body"></tbody>
+                </table>
+              </div>
+
+              <div class="mt-4" id="pagination-area"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schema editor -->
+        <div id="view-schema" class="view hidden">
+          <div class="glass p-4">
+            <h3 class="font-semibold">Editor de Esquemas</h3>
+            <div class="mt-3">
+              <label class="text-sm">Seleccionar base</label>
+              <select id="schema-select-db" class="bg-transparent border rounded px-3 py-2 mt-2"></select>
+            </div>
+            <div class="mt-3">
+              <label class="text-sm">Seleccionar tabla</label>
+              <select id="schema-select-table" class="bg-transparent border rounded px-3 py-2 mt-2"></select>
+            </div>
+
+            <div id="schema-editor-area" class="mt-4 hidden">
+              <h4 class="font-semibold">Columnas</h4>
+              <div id="columns-list" class="mt-2 space-y-2"></div>
+
+              <div class="mt-3 flex gap-2">
+                <input id="col-name" placeholder="columna" class="px-3 py-2 bg-transparent border rounded" />
+                <select id="col-type" class="px-3 py-2 bg-transparent border rounded">
+                  <option value="TEXTO">TEXTO</option>
+                  <option value="NUMERO">NÚMERO</option>
+                </select>
+                <label class="inline-flex items-center gap-2 ml-2"><input id="col-pk" type="checkbox" /> PK</label>
+                <button id="add-column" class="px-3 py-2 bg-indigo-600 rounded">Añadir</button>
+              </div>
+
+              <div class="mt-4 text-sm text-gray-400">
+                Nota: Cambios en columnas crean nuevas definiciones; eliminar columnas no borra datos históricos automáticamente.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Migration view -->
+        <div id="view-migration" class="view hidden">
+          <div class="glass p-4">
+            <h3 class="font-semibold">Generador de Migración a SQL Server (T-SQL)</h3>
+            <div class="mt-3">
+              <label class="text-sm">Seleccionar base</label>
+              <select id="migration-db" class="bg-transparent border rounded px-3 py-2 mt-2"></select>
+            </div>
+
+            <div class="mt-3">
+              <label class="text-sm">Incluir datos (INSERTs)</label>
+              <input id="migration-include-data" type="checkbox" checked class="ml-2" />
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <button id="generate-sql" class="px-3 py-2 bg-amber-500 rounded">Generar SQL</button>
+              <button id="copy-sql" class="px-3 py-2 bg-indigo-600 rounded">Copiar</button>
+            </div>
+
+            <div class="mt-4">
+              <textarea id="sql-output" rows="12" class="w-full bg-black/30 p-3 rounded text-sm"></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal container (single reusable modal) -->
+  <div id="modal-root" class="fixed inset-0 z-50 hidden items-center justify-center">
+    <div class="modal-backdrop absolute inset-0 bg-black/60"></div>
+    <div id="modal" role="dialog" aria-modal="true" class="relative glass p-4 w-full max-w-2xl rounded max-h-[90vh] overflow-auto">
+      <div id="modal-content"></div>
+      <div class="mt-4 text-right">
+        <button id="modal-cancel" class="px-3 py-2 bg-white/5 rounded mr-2">Cerrar</button>
+        <button id="modal-ok" class="px-3 py-2 bg-indigo-600 rounded">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast area -->
+  <div id="toast-root" class="toast space-y-2"></div>
+
+  <!-- Hidden file input for import -->
+  <input id="file-input" type="file" accept=".json,.csv,application/json,text/csv" class="hidden" />
+
+  <!-- Single-file JS: implements IndexedDB, metadata, UI, import/export, migration. -->
+  <script>
+/*
+  DBMaster Pro — Single-file app
+  - IndexedDB primary storage (object store per table)
+  - Metadata (schemas) in localStorage (fast access)
+  - Async/await for all IDB operations
+  - Custom modals and toasts (no alert/confirm)
+  - Demo DB created on first run
+*/
+
+/* ------------------------
+   Utilities and constants
+   ------------------------ */
+const IDB_NAME = 'DBMaster_IndexedDB';
+const META_KEY = 'dbmaster_meta_v1'; // localStorage key for schemas
+const VERSION_KEY = 'dbmaster_idb_version';
+const DEFAULT_IDB_VERSION = 1;
+
+// Helpers for toasts and modals
+const toastRoot = document.getElementById('toast-root');
+function showToast(message, type='info', ttl=4000){
+  const el = document.createElement('div');
+  el.className = 'glass p-3 rounded shadow-sm';
+  el.style.minWidth = '220px';
+  el.innerHTML = \`
+    <div class="flex items-center gap-2">
+      <div class="flex-1 text-sm">\${message}</div>
+      <div><button class="text-xs text-gray-300 close-btn">x</button></div>
+    </div>\`;
+  if(type==='error') el.style.borderLeft = '4px solid rgba(255,0,64,0.7)';
+  if(type==='success') el.style.borderLeft = '4px solid rgba(34,197,94,0.7)';
+  toastRoot.appendChild(el);
+  const closeBtn = el.querySelector('.close-btn');
+  closeBtn.addEventListener('click', ()=> el.remove());
+  setTimeout(()=> { if(el.parentNode) el.remove(); }, ttl);
+  return el;
+}
+
+// Modal system
+const modalRoot = document.getElementById('modal-root');
+const modalContent = document.getElementById('modal-content');
+const modalOk = document.getElementById('modal-ok');
+const modalCancel = document.getElementById('modal-cancel');
+let modalResolve = null;
+function showModal(html, opts={okText:'Guardar', cancelText:'Cerrar', focusSelector:null}){
+  modalContent.innerHTML = '';
+  if(typeof html === 'string') modalContent.innerHTML = html;
+  else modalContent.appendChild(html);
+  modalOk.textContent = opts.okText || 'Guardar';
+  modalCancel.textContent = opts.cancelText || 'Cerrar';
+  modalRoot.classList.remove('hidden');
+  setTimeout(()=> modalRoot.classList.add('flex'), 20);
+  if(opts.focusSelector){
+    setTimeout(()=> {
+      const el = modalContent.querySelector(opts.focusSelector);
+      if(el) el.focus();
+    }, 80);
+  }
+  return new Promise((res)=>{
+    modalResolve = res;
+  });
+}
+modalOk.addEventListener('click', ()=> { modalRoot.classList.add('hidden'); modalResolve && modalResolve(true); });
+modalCancel.addEventListener('click', ()=> { modalRoot.classList.add('hidden'); modalResolve && modalResolve(false); });
+document.getElementById('modal-root').addEventListener('click', (e)=>{
+  if(e.target.id === 'modal-root') { modalRoot.classList.add('hidden'); modalResolve && modalResolve(false); }
+});
+
+/* ------------------------
+   Metadata management
+   Stored in localStorage for quick access
+   Structure:
+   {
+     databases: {
+       dbName: {
+         tables: {
+           tableName: {
+             columns: [{name, type:'TEXTO'|'NUMERO', pk: boolean}],
+             createdAt: timestamp
+           }, ...
+         },
+         createdAt: timestamp
+       }, ...
+     }
+   }
+*/
+function loadMeta(){
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    if(!raw) return {databases:{}};
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading meta', e);
+    return {databases:{}};
+  }
+}
+function saveMeta(meta){
+  localStorage.setItem(META_KEY, JSON.stringify(meta));
+}
+
+/* ------------------------
+   IndexedDB helpers (async/await)
+   We store one IDB database (IDB_NAME) and create/delete objectStores per table.
+   When creating or deleting a store we bump the DB version and perform changes in onupgradeneeded.
+   ------------------------ */
+
+function getCurrentVersion(){
+  const v = parseInt(localStorage.getItem(VERSION_KEY) || DEFAULT_IDB_VERSION, 10);
+  return isNaN(v) ? DEFAULT_IDB_VERSION : v;
+}
+
+function setCurrentVersion(v){
+  localStorage.setItem(VERSION_KEY, String(v));
+}
+
+/**
+ * Open IDB with current version
+ * Returns IDBDatabase
+ */
+function openIdb(versionOverride){
+  return new Promise((resolve, reject) => {
+    const v = versionOverride || getCurrentVersion();
+    const req = indexedDB.open(IDB_NAME, v);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (ev) => reject(req.error);
+    // Note: we intentionally do not handle onupgradeneeded here, upgrades happen in upgradeDatabase
+  });
+}
+
+/**
+ * Perform an upgrade applying create/delete/rename actions.
+ * actions: [{type:'create', storeName, keyPath|null}, {type:'delete', storeName}, ...]
+ */
+async function upgradeDatabase(actions = []){
+  // increment version
+  const newVersion = getCurrentVersion() + 1;
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, newVersion);
+    req.onupgradeneeded = (ev) => {
+      const db = req.result;
+      try {
+        for(const a of actions){
+          if(a.type === 'create'){
+            const opts = {};
+            if(a.keyPath) opts.keyPath = a.keyPath;
+            else opts.autoIncrement = true;
+            if(db.objectStoreNames.contains(a.storeName)){
+              // already exists; skip
+              continue;
+            }
+            db.createObjectStore(a.storeName, opts);
+          } else if(a.type === 'delete'){
+            if(db.objectStoreNames.contains(a.storeName)){
+              db.deleteObjectStore(a.storeName);
+            }
+          } else if(a.type === 'clear'){
+            if(db.objectStoreNames.contains(a.storeName)){
+              const tx = ev.currentTarget.transaction;
+              try { 
+                const os = tx.objectStore(a.storeName); 
+                os.clear();
+              } catch(e){ console.warn('clear failed', e); }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('upgrade error', e);
+        reject(e);
+      }
+    };
+    req.onsuccess = () => {
+      setCurrentVersion(newVersion);
+      resolve(req.result);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/* Generic IDB transaction helpers */
+async function idbAdd(storeName, value){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const os = tx.objectStore(storeName);
+    const req = os.add(value);
+    req.onsuccess = (e) => resolve(req.result);
+    req.onerror = (e) => reject(req.error);
+  });
+}
+async function idbPut(storeName, value){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const os = tx.objectStore(storeName);
+    const req = os.put(value);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGetAll(storeName){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    if(!db.objectStoreNames.contains(storeName)) { resolve([]); return; }
+    const tx = db.transaction(storeName, 'readonly');
+    const os = tx.objectStore(storeName);
+    const req = os.getAll();
+    req.onsuccess = ()=> resolve(req.result || []);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbGet(storeName, key){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    if(!db.objectStoreNames.contains(storeName)) { resolve(undefined); return; }
+    const tx = db.transaction(storeName, 'readonly');
+    const os = tx.objectStore(storeName);
+    const req = os.get(key);
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbDelete(storeName, key){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    if(!db.objectStoreNames.contains(storeName)) { resolve(); return; }
+    const tx = db.transaction(storeName, 'readwrite');
+    const os = tx.objectStore(storeName);
+    const req = os.delete(key);
+    req.onsuccess = ()=> resolve();
+    req.onerror = ()=> reject(req.error);
+  });
+}
+
+/* ------------------------
+   High-level DB operations (metadata aware)
+   ------------------------ */
+function storeName(dbName, tableName){
+  // safe store name
+  return \`\${dbName}__\${tableName}\`;
+}
+
+/**
+ * Create new database (metadata only)
+ */
+function createDatabaseMeta(dbName){
+  const meta = loadMeta();
+  if(meta.databases[dbName]) {
+    showToast('La base ya existe', 'error'); 
+    return false;
+  }
+  meta.databases[dbName] = { tables: {}, createdAt: Date.now() };
+  saveMeta(meta);
+  return true;
+}
+
+/**
+ * Create table: updates metadata and creates object store in IDB
+ * columns: [{name,type,pk}]
+ */
+async function createTable(dbName, tableName, columns){
+  const meta = loadMeta();
+  if(!meta.databases[dbName]) createDatabaseMeta(dbName);
+  const dbMeta = meta.databases[dbName];
+  if(dbMeta.tables[tableName]) throw new Error('Tabla ya existe');
+  dbMeta.tables[tableName] = { columns: columns.map(c=>({...c})), createdAt: Date.now() };
+  saveMeta(meta);
+
+  // determine keyPath (primary key) if any
+  const pk = columns.find(c=>c.pk);
+  const store = storeName(dbName, tableName);
+  try {
+    await upgradeDatabase([{type:'create', storeName: store, keyPath: pk ? pk.name : null }]);
+    showToast('Tabla creada', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Error creando tabla: '+ (e.message || e), 'error');
+  }
+}
+
+/**
+ * Delete table: remove metadata and drop object store
+ */
+async function deleteTable(dbName, tableName){
+  const meta = loadMeta();
+  if(!meta.databases[dbName] || !meta.databases[dbName].tables[tableName]) throw new Error('No existe tabla');
+  delete meta.databases[dbName].tables[tableName];
+  saveMeta(meta);
+  const store = storeName(dbName, tableName);
+  try {
+    await upgradeDatabase([{type:'delete', storeName: store }]);
+    showToast('Tabla eliminada', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Error eliminando tabla: '+ e.message, 'error');
+  }
+}
+
+/**
+ * Rename table: create new table (same schema), copy rows, delete old table (metadata & store)
+ * Note: we implement copy during upgrade by reading old entries then writing into new store after creation.
+ */
+async function renameTable(dbName, oldName, newName){
+  const meta = loadMeta();
+  const dbMeta = meta.databases[dbName];
+  if(!dbMeta || !dbMeta.tables[oldName]) throw new Error('Tabla origen no existe');
+  if(dbMeta.tables[newName]) throw new Error('Tabla destino ya existe');
+
+  const schema = dbMeta.tables[oldName].columns;
+  dbMeta.tables[newName] = { columns: JSON.parse(JSON.stringify(schema)), createdAt: Date.now() };
+  delete dbMeta.tables[oldName];
+  saveMeta(meta);
+
+  const oldStore = storeName(dbName, oldName);
+  const newStore = storeName(dbName, newName);
+
+  // create new store with same PK config
+  const pk = schema.find(c=>c.pk);
+  try {
+    await upgradeDatabase([{type:'create', storeName:newStore, keyPath: pk ? pk.name : null }]);
+    // copy data
+    const rows = await idbGetAll(oldStore);
+    for(const r of rows){
+      try { await idbPut(newStore, r); } catch(e){ console.warn('copy row failed',e); }
+    }
+    // delete old store
+    await upgradeDatabase([{type:'delete', storeName: oldStore}]);
+    showToast('Tabla renombrada', 'success');
+  } catch(e){
+    console.error(e);
+    showToast('Error renombrando: '+e.message, 'error');
+  }
+}
+
+/* ------------------------
+   CRUD helpers that build dynamic forms based on schema
+   ------------------------ */
+async function insertRecord(dbName, tableName, row){
+  const meta = loadMeta();
+  const table = meta.databases[dbName].tables[tableName];
+  if(!table) throw new Error('Tabla no existe');
+  // basic validation
+  for(const col of table.columns){
+    const val = row[col.name];
+    if(val === undefined || val === null || val === '') continue; // allow empty
+    if(col.type === 'NUMERO'){
+      const parsed = parseFloat(val);
+      if(isNaN(parsed)) throw new Error(\`Campo \${col.name} requiere número\`);
+      row[col.name] = parsed;
+    } else {
+      row[col.name] = String(val);
+    }
+  }
+  const store = storeName(dbName, tableName);
+  try {
+    await idbAdd(store, row);
+    showToast('Registro insertado', 'success');
+  } catch (e) {
+    // try put (in case PK collision)
+    try { await idbPut(store, row); showToast('Registro guardado (put)', 'success'); }
+    catch(err){ throw err; }
+  }
+}
+
+async function updateRecord(dbName, tableName, key, row){
+  const store = storeName(dbName, tableName);
+  // idbPut will overwrite
+  return await idbPut(store, row);
+}
+
+async function deleteRecord(dbName, tableName, key){
+  const store = storeName(dbName, tableName);
+  return await idbDelete(store, key);
+}
+
+/* ------------------------
+   Import/Export: CSV/JSON and full backup
+   ------------------------ */
+
+/**
+ * Simple CSV parser (handles quoted fields)
+ */
+function parseCSV(text){
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if(lines.length === 0) return [];
+  const result = [];
+  // parse header
+  const header = parseCSVLine(lines[0]);
+  for(let i=1;i<lines.length;i++){
+    const rowarr = parseCSVLine(lines[i]);
+    if(rowarr.length === 0) continue;
+    const obj = {};
+    for(let j=0;j<header.length;j++){
+      obj[header[j]] = rowarr[j] !== undefined ? rowarr[j] : '';
+    }
+    result.push(obj);
+  }
+  return result;
+}
+function parseCSVLine(line){
+  const arr = [];
+  let cur = '';
+  let inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"' ){
+      if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; continue; }
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if(ch === ',' && !inQuotes){ arr.push(cur); cur=''; continue; }
+    cur += ch;
+  }
+  if(cur !== '' || line.endsWith(',')) arr.push(cur);
+  return arr.map(c=>c.trim());
+}
+
+/**
+ * Import JSON array of objects: if table exists, insert rows; else create table by detecting schema from keys (TEXTO default)
+ */
+async function importJSON(dbName, tableName, jsonArray){
+  const meta = loadMeta();
+  if(!meta.databases[dbName]) createDatabaseMeta(dbName);
+  if(!meta.databases[dbName].tables[tableName]){
+    // detect schema: union of keys, assume TEXTO
+    const keys = new Set();
+    jsonArray.forEach(obj=> Object.keys(obj).forEach(k=> keys.add(k)));
+    const columns = Array.from(keys).map(k=> ({name:k, type:'TEXTO', pk:false}));
+    await createTable(dbName, tableName, columns);
+  }
+  // insert rows
+  for(const r of jsonArray){
+    try{
+      await insertRecord(dbName, tableName, r);
+    } catch(e){
+      console.error('import insert error', e);
+    }
+  }
+  showToast('Importación JSON completada', 'success');
+}
+
+/**
+ * Import CSV: detect headers -> create table with TEXT columns
+ */
+async function importCSV(dbName, tableName, csvText){
+  const arr = parseCSV(csvText);
+  if(arr.length === 0) throw new Error('CSV vacío o inválido');
+  await importJSON(dbName, tableName, arr);
+}
+
+/**
+ * Export table to JSON array
+ */
+async function exportTableJSON(dbName, tableName){
+  const rows = await idbGetAll(storeName(dbName, tableName));
+  return rows;
+}
+
+/**
+ * Backup full DB: metadata + all table rows
+ */
+async function exportBackup(){
+  const meta = loadMeta();
+  const out = { meta: meta, data: {} };
+  for(const [dbName, dbObj] of Object.entries(meta.databases || {})){
+    out.data[dbName] = {};
+    for(const tableName of Object.keys(dbObj.tables || {})){
+      const rows = await idbGetAll(storeName(dbName, tableName));
+      out.data[dbName][tableName] = rows;
+    }
+  }
+  return out;
+}
+
+/* ------------------------
+   Migration generator (T-SQL)
+   Map TEXTO -> NVARCHAR(4000), NUMERO -> FLOAT
+   Must escape single quotes in values
+   ------------------------ */
+function escapeSqlValue(val){
+  if(val === null || val === undefined) return 'NULL';
+  if(typeof val === 'number') return val;
+  // replace single quote with two single quotes
+  return "N'" + String(val).replace(/'/g, "''") + "'";
+}
+
+async function generateMigrationSQL(dbName, includeData=true){
+  const meta = loadMeta();
+  if(!meta.databases[dbName]) throw new Error('DB no encontrada');
+  const lines = [];
+  const dbLabel = dbName.replace(/[^a-zA-Z0-9_]/g,'_');
+  lines.push(\`CREATE DATABASE [\${dbLabel}];\`);
+  lines.push(\`USE [\${dbLabel}];\`);
+  for(const [tableName, tmeta] of Object.entries(meta.databases[dbName].tables || {})){
+    const cols = tmeta.columns.map(c=>{
+      const sqlType = c.type === 'NUMERO' ? 'FLOAT' : 'NVARCHAR(4000)';
+      return \`[\${c.name}] \${sqlType}\`;
+    });
+    const pkCols = tmeta.columns.filter(c=>c.pk).map(c=>\`[\${c.name}]\`);
+    const pkClause = pkCols.length ? \`, PRIMARY KEY(\${pkCols.join(',')})\` : '';
+    lines.push('');
+    lines.push(\`CREATE TABLE [\${tableName}] (\${cols.join(', ')}\${pkClause});\`);
+    if(includeData){
+      const rows = await idbGetAll(storeName(dbName, tableName));
+      for(const r of rows){
+        const colNames = Object.keys(r);
+        const vals = colNames.map(k=>escapeSqlValue(r[k]));
+        lines.push(\`INSERT INTO [\${tableName}] (\${colNames.map(n=>\`[\${n}]\`).join(',')}) VALUES (\${vals.join(',')});\`);
+      }
+    }
+  }
+  return lines.join('\\n');
+}
+
+/* ------------------------
+   Demo data installation
+   ------------------------ */
+async function ensureDemo(){
+  const meta = loadMeta();
+  if(meta.databases['demo_db']) return;
+  createDatabaseMeta('demo_db');
+  // users table
+  const users = [
+    {id: 'u1', name:'Alice', age: 30},
+    {id: 'u2', name:'Bob', age: 25},
+    {id: 'u3', name:'Carlos', age: 28},
+  ];
+  await createTable('demo_db', 'users', [
+    {name:'id', type:'TEXTO', pk:true},
+    {name:'name', type:'TEXTO', pk:false},
+    {name:'age', type:'NUMERO', pk:false}
+  ]);
+  for(const u of users) { try { await idbPut(storeName('demo_db','users'), u);} catch(e){console.warn(e);} }
+
+  // products table
+  const products = [
+    {sku:'p01', title:'Water Bottle', price:12.5},
+    {sku:'p02', title:'Notebook', price:3.9},
+    {sku:'p03', title:'Pens Pack', price:2.0},
+    {sku:'p04', title:'Backpack', price:45.0},
+  ];
+  await createTable('demo_db', 'products', [
+    {name:'sku', type:'TEXTO', pk:true},
+    {name:'title', type:'TEXTO', pk:false},
+    {name:'price', type:'NUMERO', pk:false}
+  ]);
+  for(const p of products) { try { await idbPut(storeName('demo_db','products'), p);} catch(e){console.warn(e);} }
+
+  showToast('Demo instalado: demo_db con users y products', 'success', 6000);
+  refreshUI();
+}
+
+/* ------------------------
+   UI wiring: views, lists, forms
+   ------------------------ */
+
+const views = document.querySelectorAll('.view');
+function showView(name){
+  views.forEach(v=> v.classList.add('hidden'));
+  const el = document.getElementById('view-' + name);
+  if(el) el.classList.remove('hidden');
+  document.getElementById('view-title').textContent = {
+    dashboard:'Dashboard', 'data-center':'Centro de Datos', explorer:'Explorador de Tablas', schema:'Editor de Esquemas', migration:'Migración (T-SQL)'
+  }[name] || 'Dashboard';
+  // update select db lists
+  populateDBSelects();
+  if(name === 'dashboard') refreshStats();
+}
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> {
+    const view = btn.dataset.view;
+    showView(view);
+  });
+});
+
+document.getElementById('toggle-sidebar').addEventListener('click', ()=>{
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('hidden');
+});
+
+/* Populate DB select elements */
+function populateDBSelects(){
+  const meta = loadMeta();
+  const dbs = Object.keys(meta.databases || {});
+  const selectIds = ['select-db','schema-select-db','migration-db','schema-select-db','schema-select-db','schema-select-db','schema-select-db','schema-select-db','schema-select-db']
+  // simple consolidated update
+  const selectElems = document.querySelectorAll('select');
+  selectElems.forEach(sel=>{
+    if(['select-db','schema-select-db','migration-db','schema-select-db','schema-select-table'].includes(sel.id)){
+      // do nothing here; we will update specific ones below
+    }
+  });
+
+  const selectDb = document.getElementById('select-db');
+  updateOptions(selectDb, dbs);
+  const schemaDb = document.getElementById('schema-select-db');
+  updateOptions(schemaDb, dbs);
+  const migrationDb = document.getElementById('migration-db');
+  updateOptions(migrationDb, dbs);
+
+  // data center list
+  const dbList = document.getElementById('db-list');
+  dbList.innerHTML = '';
+  dbs.forEach(dbName=>{
+    const li = document.createElement('li');
+    li.className = 'flex items-center justify-between p-2 bg-black/20 rounded';
+    li.innerHTML = \`<div><strong>\${dbName}</strong><div class="text-xs text-gray-400">Tablas: \${Object.keys(meta.databases[dbName].tables || {}).length}</div></div>
+                    <div class="flex gap-2">
+                      <button class="px-2 py-1 bg-indigo-600 text-xs open-db" data-db="\${dbName}">Abrir</button>
+                      <button class="px-2 py-1 bg-red-600 text-xs del-db" data-db="\${dbName}">Eliminar</button>
+                    </div>\`;
+    dbList.appendChild(li);
+  });
+
+  // update explorer's DB display
+  const selected = selectDb.value || dbs[0] || null;
+  if(selected) {
+    document.getElementById('explorer-db-name').textContent = selected;
+    populateTables(selected);
+  } else {
+    document.getElementById('explorer-db-name').textContent = '-';
+    document.getElementById('table-list').innerHTML = '';
+  }
+}
+
+/* update select options helper */
+function updateOptions(select, items){
+  if(!select) return;
+  const cur = select.value;
+  select.innerHTML = '';
+  items.forEach(i=>{
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = i;
+    select.appendChild(opt);
+  });
+  if(items.includes(cur)) select.value = cur;
+}
+
+/* event handlers for creating DB / table and others */
+document.getElementById('create-db').addEventListener('click', ()=>{
+  const name = document.getElementById('new-db-name').value.trim();
+  if(!name) return showToast('Nombre inválido', 'error');
+  if(createDatabaseMeta(name)) { showToast('Base creada', 'success'); refreshUI(); }
+  document.getElementById('new-db-name').value = '';
+});
+document.getElementById('create-db-btn').addEventListener('click', ()=> {
+  showView('data-center');
+  // open create area
+});
+document.getElementById('create-table-btn').addEventListener('click', async ()=>{
+  const db = document.getElementById('select-db').value;
+  if(!db) return showToast('Selecciona una base primero', 'error');
+  await openCreateTableModal(db);
+});
+document.getElementById('create-table').addEventListener('click', async ()=>{
+  const db = document.getElementById('select-db').value;
+  if(!db) return showToast('Selecciona una base', 'error');
+  await openCreateTableModal(db);
+});
+
+async function openCreateTableModal(dbName){
+  // modal form to create table with simple UI for columns
+  const container = document.createElement('div');
+  container.innerHTML = \`
+    <div>
+      <label class="text-sm">Nombre tabla</label>
+      <input id="modal-table-name" class="w-full mt-2 px-2 py-2 bg-transparent border rounded" />
+      <div class="mt-3">
+        <label class="text-sm">Columnas (añade una a una)</label>
+        <div class="mt-2 flex gap-2">
+          <input id="modal-col-name" placeholder="nombre" class="px-2 py-2 bg-transparent border rounded flex-1" />
+          <select id="modal-col-type" class="px-2 py-2 bg-transparent border rounded">
+            <option value="TEXTO">TEXTO</option>
+            <option value="NUMERO">NUMERO</option>
+          </select>
+          <label class="inline-flex items-center gap-2"><input id="modal-col-pk" type="checkbox" /> PK</label>
+          <button id="modal-add-col" class="px-3 py-2 bg-indigo-600 rounded">Añadir</button>
+        </div>
+        <div id="modal-cols-list" class="mt-3 space-y-2"></div>
+      </div>
+    </div>
+  `;
+  const ok = await showModal(container, {focusSelector:'#modal-table-name', okText:'Crear'});
+  if(!ok) return;
+  const tableName = container.querySelector('#modal-table-name').value.trim();
+  if(!tableName) return showToast('Nombre de tabla requerido', 'error');
+  const colsNodes = container.querySelectorAll('.col-item');
+  const cols = Array.from(colsNodes).map(n=>{
+    return {name: n.dataset.name, type: n.dataset.type, pk: n.dataset.pk === 'true'};
+  });
+  if(cols.length === 0) return showToast('Añade al menos una columna', 'error');
+  try {
+    await createTable(dbName, tableName, cols);
+    refreshUI();
+  } catch(e){ showToast('Error: '+e.message, 'error'); }
+}
+
+// dynamic behavior inside modal: listen for add column clicks
+document.addEventListener('click', (e)=>{
+  if(e.target && e.target.id === 'modal-add-col'){
+    const root = e.target.closest('#modal-content');
+    const name = root.querySelector('#modal-col-name').value.trim();
+    const type = root.querySelector('#modal-col-type').value;
+    const pk = root.querySelector('#modal-col-pk').checked;
+    if(!name) return showToast('Nombre de columna requerido', 'error');
+    // append to list
+    const list = root.querySelector('#modal-cols-list');
+    const item = document.createElement('div');
+    item.className = 'col-item p-2 bg-black/20 rounded flex items-center justify-between';
+    item.dataset.name = name; item.dataset.type = type; item.dataset.pk = String(pk);
+    item.innerHTML = \`<div>\${name} <span class="text-xs text-gray-400">[\${type}]\${pk? ' • PK':''}</span></div><div><button class="px-2 py-1 rem-col text-xs">Eliminar</button></div>\`;
+    list.appendChild(item);
+    root.querySelector('#modal-col-name').value = '';
+    root.querySelector('#modal-col-pk').checked = false;
+  }
+});
+document.addEventListener('click', (e)=>{
+  if(e.target && e.target.classList.contains('rem-col')){
+    const it = e.target.closest('.col-item');
+    it.remove();
+  }
+});
+
+/* Explorer table list population and row rendering */
+async function populateTables(dbName){
+  const meta = loadMeta();
+  const tlist = document.getElementById('table-list');
+  tlist.innerHTML = '';
+  const dbMeta = meta.databases[dbName] || {tables:{}};
+  for(const [tName, tmeta] of Object.entries(dbMeta.tables || {})){
+    const li = document.createElement('li');
+    li.className = 'flex items-center justify-between p-2 bg-black/20 rounded';
+    li.innerHTML = \`<div><strong>\${tName}</strong><div class="text-xs text-gray-400">\${tmeta.columns.length} columnas</div></div>
+      <div class="flex gap-2">
+        <button class="px-2 py-1 bg-indigo-500 open-table" data-table="\${tName}">Abrir</button>
+        <button class="px-2 py-1 bg-white/5 text-xs schema-table" data-table="\${tName}">Esquema</button>
+      </div>\`;
+    tlist.appendChild(li);
+  }
+  // attach events
+  document.querySelectorAll('.open-table').forEach(b=> b.addEventListener('click', async (ev)=>{
+    const t = ev.currentTarget.dataset.table;
+    document.getElementById('table-name-title').textContent = t;
+    await renderTable(document.getElementById('select-db').value, t);
+  }));
+  document.querySelectorAll('.schema-table').forEach(b=> b.addEventListener('click', (ev)=>{
+    const t = ev.currentTarget.dataset.table;
+    // open schema editor for this table
+    const schemaSelectDb = document.getElementById('schema-select-db');
+    const schemaSelectTable = document.getElementById('schema-select-table');
+    schemaSelectDb.value = document.getElementById('select-db').value;
+    updateOptions(schemaSelectTable, Object.keys(loadMeta().databases[schemaSelectDb.value].tables || {}));
+    schemaSelectTable.value = t;
+    // switch to schema view and show editor
+    showView('schema');
+    populateSchemaEditor();
+  }));
+}
+
+/* render table rows with dynamic header */
+async function renderTable(dbName, tableName){
+  const meta = loadMeta();
+  const tmeta = meta.databases[dbName].tables[tableName];
+  if(!tmeta) { showToast('Tabla no encontrada en metadata', 'error'); return; }
+  const cols = tmeta.columns.map(c=>c.name);
+  const head = document.getElementById('table-head');
+  const body = document.getElementById('table-body');
+  head.innerHTML = '<tr>' + cols.map(c=>\`<th>\${c}</th>\`).join('') + '<th>Acciones</th></tr>';
+  body.innerHTML = '';
+  const rows = await idbGetAll(storeName(dbName, tableName));
+  for(const r of rows){
+    const tr = document.createElement('tr');
+    tr.innerHTML = cols.map(c=>\`<td>\${r[c] !== undefined ? r[c] : ''}</td>\`).join('') + \`<td class="flex gap-2"><button class="px-2 py-1 bg-indigo-500 text-xs edit-row">Editar</button><button class="px-2 py-1 bg-red-600 text-xs del-row">Eliminar</button></td>\`;
+    body.appendChild(tr);
+    // attach actions
+    tr.querySelector('.edit-row').addEventListener('click', ()=> openEditRowModal(dbName, tableName, r));
+    tr.querySelector('.del-row').addEventListener('click', async ()=>{
+      // find key (primary)
+      const pk = tmeta.columns.find(c=>c.pk);
+      if(pk){
+        try {
+          await deleteRecord(dbName, tableName, r[pk.name]);
+          showToast('Registro eliminado', 'success');
+          renderTable(dbName, tableName);
+        } catch(e) { showToast('Error al eliminar: '+e.message, 'error'); }
+      } else {
+        // no PK: try to find matching record by deep compare and delete by key (not possible) => clear and reinsert others
+        try {
+          const all = await idbGetAll(storeName(dbName, tableName));
+          // remove first matching by JSON
+          const idx = all.findIndex(x=> JSON.stringify(x) === JSON.stringify(r));
+          if(idx >= 0){
+            // rebuild store: clear and insert all except idx
+            // create temp store and swap? Simpler: clear and reinsert
+            await upgradeDatabase([{type:'clear', storeName: storeName(dbName, tableName)}]); // clear records
+            for(let i=0;i<all.length;i++) if(i!==idx) await idbPut(storeName(dbName, tableName), all[i]);
+            showToast('Registro eliminado (sin PK)', 'success');
+            renderTable(dbName, tableName);
+          } else showToast('Registro no encontrado', 'error');
+        } catch(e){ showToast('Error: '+e.message,'error'); }
+      }
+    });
+  }
+}
+
+/* Insert modal builder */
+async function openInsertModal(dbName, tableName){
+  const meta = loadMeta();
+  const tmeta = meta.databases[dbName].tables[tableName];
+  if(!tmeta) throw new Error('Tabla no existe');
+  const form = document.createElement('form');
+  form.innerHTML = '<div class="space-y-3"></div>';
+  const fbody = form.firstElementChild;
+  for(const col of tmeta.columns){
+    const row = document.createElement('div');
+    row.className = 'flex flex-col';
+    const id = 'f_' + col.name;
+    row.innerHTML = \`<label class="text-sm">\${col.name} (\${col.type}) \${col.pk? '<span class="text-xs text-amber-300">PK</span>':''}</label>
+      <input id="\${id}" name="\${col.name}" class="px-2 py-2 bg-transparent border rounded" />\`;
+    fbody.appendChild(row);
+  }
+  const ok = await showModal(form, {okText:'Insertar', cancelText:'Cancelar', focusSelector:'#f_' + (tmeta.columns[0] && tmeta.columns[0].name)});
+  if(!ok) return;
+  // gather values
+  const values = {};
+  for(const col of tmeta.columns){
+    values[col.name] = form.querySelector('[name="'+col.name+'"]').value;
+  }
+  try {
+    await insertRecord(dbName, tableName, values);
+    renderTable(dbName, tableName);
+  } catch(e){ showToast('Error: '+e.message, 'error'); }
+}
+
+/* Edit modal */
+async function openEditRowModal(dbName, tableName, row){
+  const meta = loadMeta();
+  const tmeta = meta.databases[dbName].tables[tableName];
+  if(!tmeta) throw new Error('Tabla no existe');
+  const form = document.createElement('form');
+  form.innerHTML = '<div class="space-y-3"></div>';
+  const fbody = form.firstElementChild;
+  for(const col of tmeta.columns){
+    const id = 'f_' + col.name;
+    const val = row[col.name] !== undefined ? row[col.name] : '';
+    const isReadOnly = !!col.pk; // PK read-only
+    const rowEl = document.createElement('div');
+    rowEl.className = 'flex flex-col';
+    rowEl.innerHTML = \`<label class="text-sm">\${col.name} (\${col.type}) \${col.pk? '<span class="text-xs text-amber-300">PK</span>':''}</label>
+      <input id="\${id}" name="\${col.name}" value="\${val}" class="px-2 py-2 bg-transparent border rounded" \${isReadOnly ? 'readonly':''} />\`;
+    fbody.appendChild(rowEl);
+  }
+  const ok = await showModal(form, {okText:'Guardar', cancelText:'Cancelar', focusSelector:'#f_' + (tmeta.columns[0] && tmeta.columns[0].name)});
+  if(!ok) return;
+  const values = {};
+  for(const col of tmeta.columns){
+    values[col.name] = form.querySelector('[name="'+col.name+'"]').value;
+    if(col.type === 'NUMERO') values[col.name] = parseFloat(values[col.name]);
+  }
+  try {
+    await updateRecord(dbName, tableName, null, values);
+    renderTable(dbName, tableName);
+    showToast('Registro actualizado', 'success');
+  } catch(e){ showToast('Error: '+e.message, 'error'); }
+}
+
+/* Schema editor population and actions */
+function populateSchemaEditor(){
+  const schemaDb = document.getElementById('schema-select-db').value;
+  const schemaTable = document.getElementById('schema-select-table').value;
+  const area = document.getElementById('schema-editor-area');
+  const colsList = document.getElementById('columns-list');
+  if(!schemaDb || !schemaTable) { area.classList.add('hidden'); return; }
+  area.classList.remove('hidden');
+  const meta = loadMeta();
+  const tmeta = meta.databases[schemaDb].tables[schemaTable];
+  colsList.innerHTML = '';
+  for(const c of tmeta.columns){
+    const div = document.createElement('div');
+    div.className = 'flex items-center justify-between p-2 bg-black/20 rounded';
+    div.innerHTML = \`<div>\${c.name} <span class="text-xs text-gray-400">[\${c.type}]\${c.pk? ' • PK':''}</span></div>
+      <div class="flex gap-2">
+        <button class="px-2 py-1 text-xs rem-col-schema">Eliminar</button>
+      </div>\`;
+    div.dataset.col = c.name;
+    colsList.appendChild(div);
+    div.querySelector('.rem-col-schema').addEventListener('click', async ()=>{
+      // remove column from metadata only
+      tmeta.columns = tmeta.columns.filter(x=>x.name !== c.name);
+      saveMeta(meta);
+      showToast('Columna eliminada del esquema (no se borran datos)', 'info');
+      populateSchemaEditor();
+    });
+  }
+}
+
+/* Schema select changes */
+document.getElementById('schema-select-db').addEventListener('change', (e)=>{
+  const db = e.target.value;
+  const tables = Object.keys(loadMeta().databases[db].tables || {});
+  updateOptions(document.getElementById('schema-select-table'), tables);
+  populateSchemaEditor();
+});
+document.getElementById('schema-select-table').addEventListener('change', populateSchemaEditor);
+
+/* add column via schema editor UI */
+document.getElementById('add-column').addEventListener('click', ()=>{
+  const db = document.getElementById('schema-select-db').value;
+  const table = document.getElementById('schema-select-table').value;
+  if(!db || !table) return showToast('Selecciona db y tabla', 'error');
+  const name = document.getElementById('col-name').value.trim();
+  if(!name) return showToast('Nombre columna requerido', 'error');
+  const type = document.getElementById('col-type').value;
+  const pk = document.getElementById('col-pk').checked;
+  const meta = loadMeta();
+  const tmeta = meta.databases[db].tables[table];
+  if(tmeta.columns.find(c=>c.name===name)) return showToast('Columna ya existe', 'error');
+  tmeta.columns.push({name, type, pk});
+  saveMeta(meta);
+  // If PK provided and existing store has no PK, we cannot change keyPath easily - warn user
+  showToast('Columna añadida al esquema. Para que PK afecte a IndexedDB renombra la tabla o recrea.', 'info', 6000);
+  populateSchemaEditor();
+});
+
+/* Migration generation */
+document.getElementById('generate-sql').addEventListener('click', async ()=>{
+  const db = document.getElementById('migration-db').value;
+  const include = document.getElementById('migration-include-data').checked;
+  try {
+    const sql = await generateMigrationSQL(db, include);
+    document.getElementById('sql-output').value = sql;
+    showToast('SQL generado', 'success');
+  } catch(e){ showToast('Error generando SQL: '+e.message, 'error'); }
+});
+document.getElementById('copy-sql').addEventListener('click', ()=>{
+  const txt = document.getElementById('sql-output').value;
+  navigator.clipboard && navigator.clipboard.writeText(txt).then(()=> showToast('SQL copiado al portapapeles', 'success')).catch(()=> showToast('Error copiando', 'error'));
+});
+
+/* Export / Import UI wiring */
+document.getElementById('export-backup').addEventListener('click', async ()=>{
+  try {
+    const backup = await exportBackup();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'dbmaster_backup.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Backup descargado', 'success');
+  } catch(e){ showToast('Error exportando: '+e.message, 'error'); }
+});
+
+document.getElementById('import-file').addEventListener('click', ()=>{
+  document.getElementById('file-input').click();
+});
+document.getElementById('file-input').addEventListener('change', async (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const text = await f.text();
+  if(f.name.endsWith('.json') || f.type.includes('json')){
+    try {
+      const obj = JSON.parse(text);
+      // detect if it's a backup (meta+data) or array
+      if(obj.meta && obj.data){
+        // restore metadata and data
+        localStorage.setItem(META_KEY, JSON.stringify(obj.meta));
+        saveMeta(obj.meta);
+        // recreate stores as needed and insert rows
+        for(const [dbName, tables] of Object.entries(obj.data)){
+          createDatabaseMeta(dbName);
+          for(const [tableName, rows] of Object.entries(tables)){
+            // detect schema from meta if present, else from rows
+            const meta = loadMeta();
+            const schema = (meta.databases[dbName] && meta.databases[dbName].tables[tableName]) ? meta.databases[dbName].tables[tableName].columns : Object.keys(rows[0] || {}).map(k=>({name:k, type:'TEXTO', pk:false}));
+            if(!meta.databases[dbName].tables[tableName]) {
+              await createTable(dbName, tableName, schema);
+            }
+            for(const r of rows){ try { await idbPut(storeName(dbName,tableName), r);} catch(e){ console.warn(e); } }
+          }
+        }
+        showToast('Backup importado', 'success');
+        refreshUI();
+      } else if(Array.isArray(obj)){
+        // ask user which db/table to import to
+        const db = promptChoose('Importar JSON (array) — selecciona base destino', Object.keys(loadMeta().databases || {}));
+        if(!db) { showToast('Importación cancelada', 'info'); return; }
+        const table = prompt('Nombre de tabla destino:');
+        if(!table) return showToast('Tabla requerida', 'error');
+        await importJSON(db, table, obj);
+        refreshUI();
+      } else {
+        showToast('JSON no reconocido', 'error');
+      }
+    } catch (e){ showToast('JSON inválido: '+e.message, 'error'); }
+  } else {
+    // assume CSV
+    try {
+      // ask for target
+      const db = promptChoose('Importar CSV — selecciona base destino', Object.keys(loadMeta().databases || {}));
+      if(!db) return showToast('Importación cancelada', 'info');
+      const table = prompt('Nombre de tabla destino:');
+      if(!table) return showToast('Tabla requerida', 'error');
+      await importCSV(db, table, text);
+      refreshUI();
+    } catch(e){ showToast('CSV inválido: '+e.message, 'error'); }
+  }
+  e.target.value = '';
+});
+
+/* Very small helper: promptChoose creates a modal with buttons; returns selected value or null */
+function promptChoose(message, options){
+  // synchronous prompt replacement using modal
+  const cont = document.createElement('div');
+  cont.innerHTML = '<div><p class="mb-3 text-sm">'+message+'</p><div id="opts" class="flex gap-2 flex-wrap"></div></div>';
+  const p = showModal(cont, {okText:'Cancelar', cancelText:'Cerrar'});
+  const optsDiv = cont.querySelector('#opts');
+  return new Promise((res)=>{
+    options.forEach(opt=>{
+      const b = document.createElement('button');
+      b.className = 'px-3 py-2 bg-indigo-600 rounded text-sm';
+      b.textContent = opt;
+      b.addEventListener('click', ()=> { modalRoot.classList.add('hidden'); res(opt); });
+      optsDiv.appendChild(b);
+    });
+    p.then((ok)=>{
+      if(!ok) res(null);
+    });
+  });
+}
+
+/* Simple UI triggers */
+document.getElementById('sample-data-btn').addEventListener('click', async ()=> { await ensureDemo(); });
+document.getElementById('btn-insert-row').addEventListener('click', async ()=>{
+  const db = document.getElementById('select-db').value;
+  const table = document.getElementById('table-name-title').textContent;
+  if(!db || !table) return showToast('Selecciona tabla', 'error');
+  await openInsertModal(db, table);
+});
+document.getElementById('btn-export-table').addEventListener('click', async ()=>{
+  const db = document.getElementById('select-db').value;
+  const table = document.getElementById('table-name-title').textContent;
+  if(!db || !table) return showToast('Selecciona tabla', 'error');
+  const rows = await exportTableJSON(db, table);
+  const blob = new Blob([JSON.stringify(rows, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = \`\${db}__\${table}.json\`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Tabla exportada', 'success');
+});
+
+/* Rename and delete table handlers */
+document.getElementById('rename-table').addEventListener('click', async ()=>{
+  const db = document.getElementById('select-db').value;
+  const table = document.getElementById('table-name-title').textContent;
+  if(!db || !table) return showToast('Selecciona tabla', 'error');
+  const newName = prompt('Nuevo nombre de tabla:', table);
+  if(!newName || newName.trim() === '') return showToast('Nombre inválido', 'error');
+  try {
+    await renameTable(db, table, newName.trim());
+    refreshUI();
+  } catch(e){ showToast('Error renombrando: '+e.message,'error'); }
+});
+document.getElementById('delete-table').addEventListener('click', async ()=>{
+  const db = document.getElementById('select-db').value;
+  const table = document.getElementById('table-name-title').textContent;
+  if(!db || !table) return showToast('Selecciona tabla', 'error');
+  // custom confirm modal
+  const ok = await showModal('<div>¿Eliminar tabla <strong>'+table+'</strong>? Esta acción borra datos.</div>', {okText:'Eliminar', cancelText:'Cancelar'});
+  if(!ok) return;
+  try { await deleteTable(db, table); refreshUI(); } catch(e){ showToast('Error: '+e.message,'error'); }
+});
+
+/* Import to specific table from Import button in explorer */
+document.getElementById('import-to-table').addEventListener('click', ()=>{
+  document.getElementById('file-input').click();
+});
+
+/* DB open button in data-center list */
+document.addEventListener('click', (e)=>{
+  if(e.target.classList.contains('open-db')){
+    const db = e.target.dataset.db;
+    document.getElementById('select-db').value = db;
+    populateTables(db);
+    showView('explorer');
+  }
+});
+/* Delete DB button: removes metadata and attempts to delete all stores belonging to that db by bumping version with delete actions */
+document.addEventListener('click', async (e)=>{
+  if(e.target.classList.contains('del-db')){
+    const db = e.target.dataset.db;
+    const ok = await showModal('Eliminar base <strong>'+db+'</strong>? Esto eliminará todas sus tablas y datos.', {okText:'Eliminar', cancelText:'Cancelar'});
+    if(!ok) return;
+    const meta = loadMeta();
+    const tables = Object.keys(meta.databases[db].tables || {});
+    // delete stores
+    const acts = tables.map(t=> ({type:'delete', storeName: storeName(db,t)}));
+    delete meta.databases[db];
+    saveMeta(meta);
+    if(acts.length) await upgradeDatabase(acts);
+    showToast('Base eliminada', 'success');
+    refreshUI();
+  }
+});
+
+/* Select-db change */
+document.getElementById('select-db').addEventListener('change', (e)=>{
+  const db = e.target.value;
+  document.getElementById('explorer-db-name').textContent = db;
+  populateTables(db);
+});
+
+/* Rename table modal prompt fallback */
+function prompt(text, def=''){
+  return window.prompt(text, def);
+}
+
+/* ------------------------
+   Initialization and helpers
+   ------------------------ */
+async function refreshStats(){
+  const meta = loadMeta();
+  const dbCount = Object.keys(meta.databases || {}).length;
+  let tableCount = 0;
+  let rowCount = 0;
+  for(const [db, dmeta] of Object.entries(meta.databases || {})){
+    tableCount += Object.keys(dmeta.tables || {}).length;
+    for(const t of Object.keys(dmeta.tables || {})){
+      const rows = await idbGetAll(storeName(db,t));
+      rowCount += rows.length;
+    }
+  }
+  document.getElementById('db-count').textContent = dbCount;
+  document.getElementById('table-count').textContent = tableCount;
+  document.getElementById('row-count').textContent = rowCount;
+  document.getElementById('status-db').textContent = 'ready';
+  document.getElementById('status-db').classList.remove('bg-red-600');
+}
+function refreshUI(){
+  populateDBSelects();
+  refreshStats();
+}
+
+/* Try registering a minimal service worker in-page (optional). We will attempt to register via a blob.
+   Note: some browsers may not allow blob URLs for serviceWorker registration; this is best-effort.
+*/
+async function tryRegisterSW(){
+  if('serviceWorker' in navigator){
+    try {
+      const swCode = \`
+        self.addEventListener('install', event => {
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', event => {
+          event.waitUntil(self.clients.claim());
+        });
+        self.addEventListener('fetch', event => {
+          // basic offline fallback: attempt network first, else return fallback (could be enhanced)
+          event.respondWith(fetch(event.request).catch(()=> caches.match(event.request)));
+        });
+      \`;
+      const blob = new Blob([swCode], {type:'application/javascript'});
+      const swUrl = URL.createObjectURL(blob);
+      await navigator.serviceWorker.register(swUrl);
+      console.log('SW registered via blob');
+    } catch(e){
+      console.warn('SW registration failed', e);
+    }
+  }
+}
+
+/* Boot sequence: create IDB initial version if needed and install demo data */
+(async function boot(){
+  try {
+    // ensure idb exists by opening
+    await openIdb();
+  } catch(e){
+    // if fails, try to create initial DB with no stores (version DEFAULT_IDB_VERSION)
+    try {
+      await upgradeDatabase([]);
+    } catch (err){ console.warn('initial idb upgrade failed', err); }
+  }
+  await ensureDemo();
+  refreshUI();
+  tryRegisterSW();
+})();
+
+/* Accessibility: focus management for modal OK button */
+modalRoot.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){ modalRoot.classList.add('hidden'); modalResolve && modalResolve(false); }
+});
+
+/* Expose some functions for debugging (optional) */
+window.DBMaster = {
+  loadMeta, saveMeta, exportBackup, generateMigrationSQL, importCSV, importJSON
+};
+
+  </script>
+</body>
+</html>
