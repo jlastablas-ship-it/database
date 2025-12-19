@@ -1,0 +1,80 @@
+Objetivo:
+1. Objetivo
+Crear, mediante un solo prompt, un archivo HTML autónomo (single-file) que implemente una PWA ligera llamada "DBMaster Pro" con interfaz tipo dashboard, almacenamiento en IndexedDB y todas las funcionalidades descritas abajo.
+
+2. Requerimientos funcionales
+- Soporte para múltiples bases de datos y tablas dinámicas.
+- CRUD completo sobre registros (Insert, Read, Update, Delete).
+- Editor de esquemas (añadir/eliminar columnas, definir PK, renombrar tablas).
+- Import/Export: backup total (JSON), export DB (JSON), import tabla desde CSV/JSON.
+- Generador de migración a SQL Server (T-SQL) que produzca CREATE DATABASE, USE, CREATE TABLE (NVARCHAR/FLOAT) y INSERTs.
+- Notificaciones tipo Toast y modales personalizados (NO usar alert/confirm).
+
+3. Arquitectura de datos
+- Almacenamiento primario: IndexedDB (una base de datos del navegador que guarda objetos por tabla).
+- Metadatos (estructura de tablas: campos, tipos, PK) en localStorage para acceso rápido.
+- Tipos soportados: TEXTO (string) y NÚMERO (float).
+- Todas las operaciones de IndexedDB deben usar async/await y manejar errores con toasts.
+
+4. Interfaz y UX
+- Diseño: Dashboard con sidebar colapsable y área principal de trabajo.
+- Navegación por vistas: Dashboard, Centro de Datos, Explorador de Tablas, Editor de Esquemas, Migración.
+- Tipografía: usar 'Inter' desde Google Fonts.
+- Estética: paleta Slate (fondos), Indigo (acciones primarias), Amber (secciones migración/SQL).
+- Iconos: SVG inline (sin dependencias externas aparte de Tailwind CDN opcional).
+
+5. Entregable y formato de salida esperado
+- El prompt debe indicar explícitamente que el output final debe ser UN ÚNICO archivo HTML válido (doctype, head, body) que incluya:
+  - CSS mínimo en el head (puede usar Tailwind CDN si se indica).
+  - Fuente Inter mediante Google Fonts.
+  - Todo el JS necesario (IndexedDB, UI, lógica) dentro del mismo archivo en <script>.
+  - Comentarios claros en el código para secciones críticas.
+- Nombrar el archivo generado como: `dbmaster_pro.html` (o similar) y dejarlo listo para abrir en navegador.
+
+6. Restricciones técnicas (instrucciones que debe incluir el prompt)
+- No usar librerías externas de UI salvo Tailwind vía CDN si es necesario.
+- No usar alert() o confirm(); implementar modales y toasts personalizados.
+- Usar async/await para todas las llamadas a IndexedDB.
+- El código debe ser legible y comentado. Evitar dependencias de servidor.
+
+7. Migración a SQL Server (detallar comportamiento esperado)
+- Generar script .sql que incluya:
+  - CREATE DATABASE [Nombre] ; USE [Nombre];
+  - CREATE TABLE [Nombre] (columna NVARCHAR(length) / FLOAT, PRIMARY KEY(...));
+  - INSERT INTO statements para todos los registros (formatos seguros, escapado de comillas).
+- Mapear TEXTO -> NVARCHAR(4000) por defecto, NÚMERO -> FLOAT.
+
+8. Import/Export y detección de esquema
+- Al importar CSV: detectar cabeceras y crear tabla con columnas tipo TEXTO por defecto, permitir cast posterior.
+- Soportar importación de JSON con arrays de objetos.
+- Exportaciones: JSON por tabla y backup global con metadatos y registros.
+
+9. Comportamiento UI para formularios dinámicos
+- Generar formularios modales basados en el esquema de columnas para Insertar y Editar.
+- Validación básica por tipo (número/texto) y mensajes de error en toasts.
+
+10. Accesibilidad y usabilidad
+- Formularios con labels asociados, foco gestionado en modales, botones con roles y aria-labels básicos.
+
+11. Casos de prueba y validaciones que debe incluir el prompt
+- Crear una base de datos demo con 2 tablas de ejemplo y 3-5 registros para comprobar export/import y migración.
+- Incluir pruebas manuales sugeridas: crear tabla, insertar registros, renombrar tabla, exportar DB, importar CSV, generar SQL.
+
+12. Instrucciones para el generador (prompts engineering)
+- Pedir al generador que produzca SOLO el contenido del archivo HTML (sin explicaciones adicionales) y que lo entregue dentro de un bloque de código o como archivo listo para descargar.
+- Indicar explícitamente el nombre de salida: `dbmaster_pro.html`.
+- Solicitar que todo el JS esté en un único <script> y que el CSS esté en el head (puede usar Tailwind CDN + pequeños estilos inline).
+
+13. Notas finales y restricciones del entorno
+- No usar llamadas de red externas en tiempo de ejecución (salvo CDN para Tailwind y Google Fonts).
+- Asegurar que la app funcione offline tras la primera carga (PWA service worker es opcional pero deseable).
+
+14. Salida de ejemplo mínima (breve)
+Genera un único archivo HTML llamado `dbmaster_pro.html` que contenga:
+- head: meta viewport, enlace a Inter, opcional CDN Tailwind, estilos mínimos.
+- body: estructura dashboard básica con sidebar + main.
+- script: implementación de IndexedDB, CRUD, import/export, generador SQL, modales y toasts.
+
+---
+Instrucción final para usar este texto como prompt:
+Introduce el contenido completo de este archivo como prompt en el generador. Solicita "Genera el archivo `dbmaster_pro.html` y devuelve SOLO su contenido".
