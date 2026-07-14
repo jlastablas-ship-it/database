@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "dexie": "https://esm.sh/dexie@^4.2.1",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "dexie-react-hooks": "https://esm.sh/dexie-react-hooks@^4.2.0",
+    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "prismjs": "https://esm.sh/prismjs@1.29.0",
+    "react-simple-code-editor": "https://esm.sh/react-simple-code-editor@0.13.1",
+    "jspdf": "https://esm.sh/jspdf@2.5.1",
+    "jspdf-autotable": "https://esm.sh/jspdf-autotable@3.8.2"
+  }
+}
+</script>
+    <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;</script>
+
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DataBase studio</title>
+    
+    <!-- jQuery & jQuery UI -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <!-- jQuery UI Base Styles -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    
+    <!-- PrismJS Theme (Atom Dark) for JSON Editor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              // We override 'indigo' because the application uses it extensively as the primary brand color.
+              // Mapping it to CSS variables allows us to change the entire theme dynamically without
+              // refactoring every component to use a new utility class name.
+              indigo: {
+                50: 'rgb(var(--color-primary-50) / <alpha-value>)',
+                100: 'rgb(var(--color-primary-100) / <alpha-value>)',
+                200: 'rgb(var(--color-primary-200) / <alpha-value>)',
+                300: 'rgb(var(--color-primary-300) / <alpha-value>)',
+                400: 'rgb(var(--color-primary-400) / <alpha-value>)',
+                500: 'rgb(var(--color-primary-500) / <alpha-value>)',
+                600: 'rgb(var(--color-primary-600) / <alpha-value>)',
+                700: 'rgb(var(--color-primary-700) / <alpha-value>)',
+                800: 'rgb(var(--color-primary-800) / <alpha-value>)',
+                900: 'rgb(var(--color-primary-900) / <alpha-value>)',
+                950: 'rgb(var(--color-primary-950) / <alpha-value>)',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Smooth transition for layout changes */
+      .layout-transition {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      /* Custom scrollbar for webkit */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      
+      /* jQuery UI Helper overrides for this app */
+      .ui-draggable-dragging {
+        z-index: 100 !important;
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+        opacity: 0.95;
+      }
+
+      /* JSON Editor Overrides */
+      .json-editor-container textarea {
+        outline: none !important;
+      }
+      .json-editor-container pre {
+        font-family: 'Menlo', 'Monaco', 'Courier New', monospace !important;
+        font-size: 12px !important;
+      }
+
+      /* Tamaño de texto de la aplicación (Text size options) */
+      html.app-text-small {
+        font-size: 13px !important;
+      }
+      html.app-text-medium {
+        font-size: 15px !important;
+      }
+      html.app-text-large {
+        font-size: 17px !important;
+      }
+
+      /* Padding de objetos en general (Padding options) */
+      /* Compact styling overrides */
+      .app-padding-compact .p-6 { padding: 1rem !important; }
+      .app-padding-compact .p-5 { padding: 0.75rem !important; }
+      .app-padding-compact .p-4 { padding: 0.5rem !important; }
+      .app-padding-compact .p-3 { padding: 0.375rem !important; }
+      .app-padding-compact .p-2 { padding: 0.25rem !important; }
+      .app-padding-compact .p-2.5 { padding: 0.3rem !important; }
+      .app-padding-compact .p-1.5 { padding: 0.2rem !important; }
+      .app-padding-compact .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+      .app-padding-compact .px-5 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+      .app-padding-compact .px-4 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+      .app-padding-compact .px-3 { padding-left: 0.375rem !important; padding-right: 0.375rem !important; }
+      .app-padding-compact .py-6 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+      .app-padding-compact .py-5 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+      .app-padding-compact .py-4 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+      .app-padding-compact .py-3 { padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; }
+      .app-padding-compact .gap-6 { gap: 1rem !important; }
+      .app-padding-compact .gap-5 { gap: 0.75rem !important; }
+      .app-padding-compact .gap-4 { gap: 0.5rem !important; }
+      .app-padding-compact .gap-3 { gap: 0.375rem !important; }
+      .app-padding-compact .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem !important; }
+      .app-padding-compact .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem !important; }
+
+      /* Regular styling overrides (Default Tailwind) */
+      /* No special overrides needed as it uses standard values, but included for completeness if desired */
+
+      /* Expand styling overrides */
+      .app-padding-expand .p-6 { padding: 2rem !important; }
+      .app-padding-expand .p-5 { padding: 1.75rem !important; }
+      .app-padding-expand .p-4 { padding: 1.5rem !important; }
+      .app-padding-expand .p-3 { padding: 1.25rem !important; }
+      .app-padding-expand .p-2 { padding: 0.75rem !important; }
+      .app-padding-expand .p-2.5 { padding: 0.85rem !important; }
+      .app-padding-expand .p-1.5 { padding: 0.5rem !important; }
+      .app-padding-expand .px-6 { padding-left: 2rem !important; padding-right: 2rem !important; }
+      .app-padding-expand .px-5 { padding-left: 1.75rem !important; padding-right: 1.75rem !important; }
+      .app-padding-expand .px-4 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+      .app-padding-expand .px-3 { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+      .app-padding-expand .py-6 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+      .app-padding-expand .py-5 { padding-top: 1.75rem !important; padding-bottom: 1.75rem !important; }
+      .app-padding-expand .py-4 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+      .app-padding-expand .py-3 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+      .app-padding-expand .gap-6 { gap: 2rem !important; }
+      .app-padding-expand .gap-5 { gap: 1.75rem !important; }
+      .app-padding-expand .gap-4 { gap: 1.5rem !important; }
+      .app-padding-expand .gap-3 { gap: 1.25rem !important; }
+      .app-padding-expand .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem !important; }
+      .app-padding-expand .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 2rem !important; }
+    </style>
+
+<link rel="stylesheet" href="/index.css">
+<script src="/_aistudio-iframe.js?v=1ee22f18"></script></head>
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-hidden h-screen w-screen">
+    <div id="root" class="h-full w-full"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
